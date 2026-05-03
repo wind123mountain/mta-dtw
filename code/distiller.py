@@ -66,6 +66,29 @@ class Distiller(nn.Module):
             self.stu2tea_id_mapping_tea = torch.LongTensor(list(self.stu2tea_id_mapping.values())).to(device)
             self.stu2tea_id_mapping_stu = torch.LongTensor(list(self.stu2tea_id_mapping.keys())).to(device)
 
+        self.mta_projector_list = None
+        if self.teacher_model:
+            if args.model_type == 'gpt2':
+                student_hidden_size = self.student_model.config.n_embd
+            else:
+                student_hidden_size = self.student_model.config.hidden_size
+            
+            if args.teacher_model_type == 'gpt2':
+                teacher_hidden_size = self.teacher_model.config.n_embd
+            else:
+                teacher_hidden_size = self.teacher_model.config.hidden_size
+
+            projector_list = nn.ModuleList()
+            for _ in range(len(args.teacher_layer_mapping)):
+                projector = nn.Linear(student_hidden_size, teacher_hidden_size)
+                projector = projector.to(device)
+                projector_list.append(projector)
+                    
+            else:
+                projector_list = None
+
+            self.mta_projector_list = projector_list 
+
     @staticmethod
     def add_distiller_args(parser):
         group = parser.add_argument_group("distiller", "distiller configurations")
@@ -107,7 +130,7 @@ class Distiller(nn.Module):
         group.add_argument("--split_layer_mapping", nargs='+', type=int, default=[0, 0, 0, 0])
         group.add_argument("--w-span-loss", type=float, default=1.0)
         group.add_argument("--MTA-mode", action="store_true", help='use MTA')
-        
+
         return parser
     
     def load_tokenizer(self, model_type, path):
