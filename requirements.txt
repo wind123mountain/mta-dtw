@@ -1,12 +1,14 @@
+# python 3.10
 torch 
-transformers 
+transformers==4.57.3
 datasets 
 accelerate 
 peft
 trl
-numba
+numba==0.56.3
 wandb
 deepspeed
 rouge-score
 editdistance
 lm_eval
+cuda-python==12.1.0

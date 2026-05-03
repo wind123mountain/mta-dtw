@@ -264,21 +264,21 @@ def finetune(
             epoch_batch_count += num_batches_in_step
             epoch_step += 1
 
-            # --- MEMORY MEASUREMENT BLOCK ---
-            allocated   = torch.cuda.memory_allocated() / 1e9
-            reserved    = torch.cuda.memory_reserved()  / 1e9
-            peak_alloc  = torch.cuda.max_memory_allocated() / 1e9
-            peak_resv   = torch.cuda.max_memory_reserved()  / 1e9
+            # # --- MEMORY MEASUREMENT BLOCK ---
+            # allocated   = torch.cuda.memory_allocated() / 1e9
+            # reserved    = torch.cuda.memory_reserved()  / 1e9
+            # peak_alloc  = torch.cuda.max_memory_allocated() / 1e9
+            # peak_resv   = torch.cuda.max_memory_reserved()  / 1e9
 
-            alloc_sum   += allocated
-            alloc_count += 1
-            avg_alloc   = alloc_sum / alloc_count
+            # alloc_sum   += allocated
+            # alloc_count += 1
+            # avg_alloc   = alloc_sum / alloc_count
 
 
-            avg_time_per_batch = epoch_batch_time_sum / epoch_batch_count if epoch_batch_count > 0 else 0.0
-            log_rank("train | avg_alloc {:.4f} | peak_alloc {:.4f} | {:.4f} s/batch".format(
-                avg_alloc, peak_alloc, avg_time_per_batch
-            ))
+            # avg_time_per_batch = epoch_batch_time_sum / epoch_batch_count if epoch_batch_count > 0 else 0.0
+            # log_rank("train | avg_alloc {:.4f} | peak_alloc {:.4f} | {:.4f} s/batch".format(
+            #     avg_alloc, peak_alloc, avg_time_per_batch
+            # ))
 
             if alloc_count == 200:
                 break

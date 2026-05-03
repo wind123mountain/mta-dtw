@@ -1,12 +1,6 @@
 #! /bin/bash
 GPUS=(0)
-export CUDA_HOME=$CONDA_PREFIX
 export CUDA_VISIBLE_DEVICES=$(IFS=,; echo "${GPUS[*]}")
-export NUMBA_CUDA_USE_NVIDIA_BINDING=1
-export NUMBA_CUDA_DEFAULT_PTX_VERSION=90
-export NUMBA_CUDA_NVVM=$CONDA_PREFIX/nvvm/lib64/libnvvm.so
-export NUMBA_CUDA_LIBDEVICE=$CONDA_PREFIX/nvvm/libdevice
-export LD_LIBRARY_PATH=$CONDA_PREFIX/nvvm/lib64:$LD_LIBRARY_PATH
 
 MASTER_ADDR=localhost
 MASTER_PORT=66$(($RANDOM%90+10))
@@ -51,7 +45,7 @@ PROJECTOR_LR=0.001
 MAX_LENGTH=512
 # runtime
 PRECISION="bf16"
-CRITERION="dwa_kd"
+CRITERION="dual_space_kd_with_cma"
 KD_OBJ="skewed_reverse_kl"
 CONFIG="${KD_OBJ}-${PRECISION}"
 SETTING=criterion=${CRITERION}__${CONFIG}__teacher=${TEACHER_MODEL_NAME}__kd^rate=${KD_RATE}__kd^temp=${KD_TEMP}__epoch=${EPOCH}__bsz=${BATCH_SIZE}x${GRAD_ACC}x${GPUS_PER_NODE}=$((BATCH_SIZE * GRAD_ACC * GPUS_PER_NODE * NNODES))__lr=${LR}__proj^lr=${PROJECTOR_LR}
@@ -147,6 +141,6 @@ export TF_CPP_MIN_LOG_LEVEL=3
 export PYTHONPATH=${BASE_PATH}
 CMD="torchrun ${DISTRIBUTED_ARGS} ${BASE_PATH}/code/distillation.py ${OPTS}"
 
-${CMD}
-# ${CMD} \
-# >> ${SAVE_PATH}/train.log 2>&1 &
+# ${CMD}
+${CMD} \
+>> ${SAVE_PATH}/train.log 2>&1 &

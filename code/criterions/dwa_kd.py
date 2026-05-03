@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from .various_divergence import VariousDivergence
 from .soft_dtw_cuda import SoftDTW
-from span_utils import get_spans_offsets, compute_overall_span_loss
+from .span_utils import get_spans_offsets, compute_overall_span_loss
 import spacy
 from spacy.matcher import Matcher
 
@@ -117,7 +117,7 @@ class DWAKD(VariousDivergence):
             s_offsets_mapping = distiller.student_tokenizer(input_texts, return_offsets_mapping=True,
                                         truncation=True, max_length=max_len, padding="max_length",
                                         add_special_tokens=False, return_tensors='pt')['offset_mapping']
-            t_offsets_mapping = distiller.teacher_tokenizers(input_texts, return_offsets_mapping=True, padding=True,
+            t_offsets_mapping = distiller.teacher_tokenizers(input_texts, return_offsets_mapping=True,
                                         truncation=True, max_length=max_len, padding="max_length",
                                         add_special_tokens=False, return_tensors='pt')['offset_mapping']
 
@@ -131,7 +131,6 @@ class DWAKD(VariousDivergence):
                                                 spans_offsets, words_offsets, self.args)
             
             log["span_loss"] = span_loss
-
 
         loss = self.ce_rate * weighted_ce_loss + self.kd_rate * weighted_kd_loss + self.dtw_rate * weighted_dtw_loss + self.args.w_span_loss * span_loss
         log["loss"] = loss

@@ -88,6 +88,9 @@ def init_distributed(args):
         device = args.local_rank
     torch.cuda.set_device(device)
 
+    from numba import cuda
+    cuda.select_device(device)
+
     dist.init_process_group(backend="nccl", timeout=timedelta(minutes=300))
 
 
