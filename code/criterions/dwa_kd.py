@@ -3,6 +3,9 @@ import torch
 import torch.nn.functional as F
 from .various_divergence import VariousDivergence
 from .soft_dtw_cuda import SoftDTW
+from span_utils import get_spans_offsets, compute_overall_span_loss
+import spacy
+from spacy.matcher import Matcher
 
 
 class DWAKD(VariousDivergence):
@@ -23,6 +26,17 @@ class DWAKD(VariousDivergence):
         self.kd_warmup_steps = getattr(args, 'kd_warmup_steps', 300)
         self.dtw_warmup_steps = getattr(args, 'dtw_warmup_steps', 0)
         self.dtw_band_source = getattr(args, 'dtw_band_source', 'cma')
+
+        self.nlp = spacy.load("en_core_web_sm")
+        self.matcher = Matcher(self.nlp.vocab)
+        VERB_PHRASE_PATTERN = [
+            {"POS": "AUX", "OP": "*"},
+            {"POS": "ADV", "OP": "*"},
+            {"POS": "VERB", "OP": "+"},
+            {"POS": "ADV", "OP": "*"},
+        ]
+
+        self.matcher.add("VERB_PHRASE", [VERB_PHRASE_PATTERN])
 
     def forward(
         self, 
@@ -96,7 +110,30 @@ class DWAKD(VariousDivergence):
             dtw_warmup_scale = 1.0
         weighted_dtw_loss = dtw_loss * dtw_warmup_scale
 
-        loss = self.ce_rate * weighted_ce_loss + self.kd_rate * weighted_kd_loss + self.dtw_rate * weighted_dtw_loss
+        span_loss = 0.0
+        if self.args.MTA_mode:
+            input_texts = distiller.student_tokenizer.batch_decode(input_data['input_ids'], skip_special_tokens=True)
+            max_len = input_data['input_ids'].size(-1)
+            s_offsets_mapping = distiller.student_tokenizer(input_texts, return_offsets_mapping=True,
+                                        truncation=True, max_length=max_len, padding="max_length",
+                                        add_special_tokens=False, return_tensors='pt')['offset_mapping']
+            t_offsets_mapping = distiller.teacher_tokenizers(input_texts, return_offsets_mapping=True, padding=True,
+                                        truncation=True, max_length=max_len, padding="max_length",
+                                        add_special_tokens=False, return_tensors='pt')['offset_mapping']
+
+            spans_offsets, words_offsets = get_spans_offsets(input_texts, self.nlp, self.matcher)
+
+            span_loss = compute_overall_span_loss(distiller.mta_projector_list, input_data['attention_mask'], 
+                                                input_data[f"teacher_{distiller.teacher_model_type}_attention_mask"],
+                                                logits, teacher_outputs.logits, outputs.hidden_states, 
+                                                teacher_outputs.hidden_states, 
+                                                s_offsets_mapping, t_offsets_mapping, 
+                                                spans_offsets, words_offsets, self.args)
+            
+            log["span_loss"] = span_loss
+
+
+        loss = self.ce_rate * weighted_ce_loss + self.kd_rate * weighted_kd_loss + self.dtw_rate * weighted_dtw_loss + self.args.w_span_loss * span_loss
         log["loss"] = loss
         log["student_entropy_mean"] = entropy_weights.mean()
         log["student_entropy_std"] = entropy_weights.std()

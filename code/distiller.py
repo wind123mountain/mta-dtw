@@ -101,6 +101,13 @@ class Distiller(nn.Module):
                            help='only conduct kd in teacher space')
         group.add_argument("--t2s-agreement", type=float, default=1.0,
                            help='threshold for t2s agreement mask selection')
+        
+        group.add_argument("--student_layer_mapping", nargs='+', type=int, default=[-1])
+        group.add_argument("--teacher_layer_mapping", nargs='+', type=int, default=[-1])
+        group.add_argument("--split_layer_mapping", nargs='+', type=int, default=[0, 0, 0, 0])
+        group.add_argument("--w-span-loss", type=float, default=1.0)
+        group.add_argument("--MTA-mode", action="store_true", help='use MTA')
+        
         return parser
     
     def load_tokenizer(self, model_type, path):

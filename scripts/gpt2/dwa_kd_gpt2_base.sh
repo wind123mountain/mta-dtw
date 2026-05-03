@@ -15,14 +15,14 @@ DISTRIBUTED_ARGS="--nproc_per_node $GPUS_PER_NODE \
                   --master_port $MASTER_PORT"
 
 # model
-BASE_PATH=path_to_project
+BASE_PATH=.
 CKPT_TYPE="gpt2"
 CKPT_NAME="gpt2-base"
-CKPT_PATH="${BASE_PATH}/model_hub/${CKPT_TYPE}/${CKPT_NAME}"
+CKPT_PATH="openai-community/gpt2"
 # we use qwen-1.8b as the teacher with the different vocabulary from gpt2
 TEACHER_MODEL_TYPE="qwen"
 TEACHER_MODEL_NAME="Qwen1.5-1.8B"
-TEACHER_MODEL_PATH="${BASE_PATH}/model_hub/${TEACHER_MODEL_TYPE}/${TEACHER_MODEL_NAME}"
+TEACHER_MODEL_PATH="VoCuc/Qwen1.5_1.8B_SFT_Dolly"
 # data
 DATA_DIR="${BASE_PATH}/data/dolly/"
 # task
@@ -30,7 +30,7 @@ TASK="dwa_kd"
 # hp
 BATCH_SIZE=2
 LR=0.0005
-GRAD_ACC=16
+GRAD_ACC=8
 EVAL_BATCH_SIZE=32
 EPOCH=10
 DTW_RATE=0.2
@@ -126,6 +126,13 @@ OPTS+=" --do-sample"
 OPTS+=" --top-k 0"
 OPTS+=" --top-p 1.0"
 OPTS+=" --temperature 1.0"
+
+#MTA
+OPTS+=" --MTA-mode"
+OPTS+=" --teacher_layer_mapping 16 24 32"
+OPTS+=" --student_layer_mapping 4 6 8"
+OPTS+=" --split_layer_mapping 0 1 3 3"
+OPTS+=" --w-span-loss 1.0"
 
 
 export NCCL_DEBUG=""
